@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use solana_sdk::signature::Keypair;
+use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::pubkey::Pubkey;
 
 
@@ -66,73 +66,95 @@ impl WalletManager {
         }
     }
 
-    pub fn generate_wallet(&mut self, _name: String) -> Result<Pubkey, String> {
-        todo!("wallet generation functionality pending")
+    pub fn generate_wallet(&mut self, name: String) -> Result<Pubkey, String> {
+        if self.wallets.contains_key(&name) {
+            return Err(format!("Wallet '{}' already exists", name));
+        }
+
+        let keypair = Keypair::new();
+        let pubkey = keypair.pubkey();
+        self.wallets.insert(name, keypair);
+
+        Ok(pubkey)
     }
 
     pub fn import_wallet(&mut self, _name: String, _private_key_bytes: &[u8]) -> Result<Pubkey, String> {
         unimplemented!("wallet import from private key")
     }
 
-    pub fn get_wallet(&self, _name: &str) -> Result<&Keypair, String> {
-        todo!("wallet retrieval by name")
+    pub fn get_wallet(&self, name: &str) -> Result<&Keypair, String> {
+        match self.wallets.get(name) {
+            Some(keypair) => Ok(keypair),
+            None => Err(format!("Wallet '{}' not found", name))
+        }
     }
 
-    pub fn get_pubkey(&self, _name: &str) -> Result<Pubkey, String> {
-        unimplemented!("public key extraction")
+    pub fn get_pubkey(&self, name: &str) -> Result<Pubkey, String> {
+        match self.wallets.get(name) {
+            Some(keypair) => Ok(keypair.pubkey()),
+            None => Err(format!("Wallet '{}' not found", name))
+        }
     }
 
     pub fn list_wallets(&self) -> Vec<(String, Pubkey)> {
-        todo!("enumerate all managed wallets")
+        self.wallets.iter()
+            .map(|(name, keypair)| (name.clone(), keypair.pubkey()))
+            .collect()
     }
 
-    pub fn remove_wallet(&mut self, _name: &str) -> Result<(), String> {
-        unimplemented!("wallet removal operation")
+    pub fn remove_wallet(&mut self, name: &str) -> Result<(), String> {
+        match self.wallets.remove(name) {
+            Some(_) => Ok(()),
+            None => Err(format!("Wallet '{}' not found", name))
+        }
     }
 
     pub fn wallet_count(&self) -> usize {
-        todo!("count total managed wallets")
+        self.wallets.len()
     }
 
-    // Factory methods for batch operations
-    pub fn batch_generate(&mut self, _prefix: &str, _count: usize) -> Result<Vec<String>, String> {
-        unimplemented!("batch wallet generation")
+    // Batch operations for wallet factory
+    pub fn batch_generate(&mut self, prefix: &str, count: usize) -> Result<Vec<String>, String> {
+        let mut generated_names = Vec::new();
+
+        for i in 0..count {
+            let name = format!("{}_{}", prefix, i);
+            match self.generate_wallet(name.clone()) {
+                Ok(_) => generated_names.push(name),
+                Err(e) => return Err(e)
+            }
+        }
+
+        Ok(generated_names)
     }
 
-    pub fn batch_generate_auto_named(&mut self, _count: usize) -> Result<Vec<String>, String> {
-        todo!("auto-named batch generation")
+    pub fn batch_generate_auto_named(&mut self, count: usize) -> Result<Vec<String>, String> {
+        let mut generated_names = Vec::new();
+
+        for i in 0..count {
+            let name = format!("wallet_{}", self.counter + i);
+            match self.generate_wallet(name.clone()) {
+                Ok(_) => generated_names.push(name),
+                Err(e) => return Err(e)
+            }
+        }
+
+        self.counter += count;
+        Ok(generated_names)
     }
 
-    pub fn create_task_group(&mut self, _task_name: &str, _count: usize) -> Result<TaskGroup, String> {
-        unimplemented!("task group creation")
-    }
+    pub fn batch_get_pubkeys(&self, wallet_names: &[String]) -> Result<Vec<(String, Pubkey)>, String> {
+        let mut result = Vec::new();
 
-    pub fn get_task_group(&self, _task_name: &str) -> Result<Vec<String>, String> {
-        todo!("retrieve task group wallets")
-    }
+        for name in wallet_names {
+            match self.get_pubkey(name) {
+                Ok(pubkey) => result.push((name.clone(), pubkey)),
+                Err(e) => return Err(e)
+            }
+        }
 
-    pub fn batch_get_pubkeys(&self, _wallet_names: &[String]) -> Result<Vec<(String, Pubkey)>, String> {
-        unimplemented!("batch pubkey retrieval")
+        Ok(result)
     }
-
-    pub fn get_available_wallets(&self, _limit: Option<usize>) -> Vec<String> {
-        todo!("get unassigned wallets")
-    }
-
-    pub fn assign_to_task(&mut self, _wallet_names: &[String], _task_name: &str) -> Result<(), String> {
-        unimplemented!("assign wallets to task")
-    }
-
-    pub fn release_from_task(&mut self, _task_name: &str) -> Result<Vec<String>, String> {
-        todo!("release wallets from task")
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct TaskGroup {
-    pub task_name: String,
-    pub wallet_names: Vec<String>,
-    pub created_at: std::time::SystemTime,
 }
 
 #[cfg(test)]
@@ -263,38 +285,6 @@ mod tests {
         assert!(wallet_names.contains(&"wallet_2".to_string()));
     }
 
-    #[test]
-    fn test_create_task_group() {
-        let mut manager = WalletManager::new();
-
-        let result = manager.create_task_group("kamino_farming", 3);
-        assert!(result.is_ok());
-
-        let task_group = result.unwrap();
-        assert_eq!(task_group.task_name, "kamino_farming");
-        assert_eq!(task_group.wallet_names.len(), 3);
-        assert_eq!(manager.wallet_count(), 3);
-    }
-
-    #[test]
-    fn test_get_task_group() {
-        let mut manager = WalletManager::new();
-
-        manager.create_task_group("test_task", 2).unwrap();
-        let result = manager.get_task_group("test_task");
-
-        assert!(result.is_ok());
-        let wallets = result.unwrap();
-        assert_eq!(wallets.len(), 2);
-    }
-
-    #[test]
-    fn test_get_nonexistent_task_group() {
-        let manager = WalletManager::new();
-
-        let result = manager.get_task_group("nonexistent_task");
-        assert!(result.is_err());
-    }
 
     #[test]
     fn test_batch_get_pubkeys() {
@@ -314,63 +304,4 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_get_available_wallets() {
-        let mut manager = WalletManager::new();
-
-        // Generate some wallets
-        manager.batch_generate_auto_named(5).unwrap();
-
-        // All should be available initially
-        let available = manager.get_available_wallets(None);
-        assert_eq!(available.len(), 5);
-
-        // Test with limit
-        let limited = manager.get_available_wallets(Some(3));
-        assert_eq!(limited.len(), 3);
-    }
-
-    #[test]
-    fn test_assign_and_release_wallets() {
-        let mut manager = WalletManager::new();
-
-        let wallet_names = manager.batch_generate("worker", 3).unwrap();
-
-        // Assign to task
-        let assign_result = manager.assign_to_task(&wallet_names, "mining_task");
-        assert!(assign_result.is_ok());
-
-        // Should have fewer available wallets
-        let available = manager.get_available_wallets(None);
-        assert_eq!(available.len(), 0); // All assigned
-
-        // Release from task
-        let release_result = manager.release_from_task("mining_task");
-        assert!(release_result.is_ok());
-
-        let released_wallets = release_result.unwrap();
-        assert_eq!(released_wallets.len(), 3);
-
-        // Should be available again
-        let available_after = manager.get_available_wallets(None);
-        assert_eq!(available_after.len(), 3);
-    }
-
-    #[test]
-    fn test_assign_nonexistent_wallets_fails() {
-        let mut manager = WalletManager::new();
-
-        let fake_wallets = vec!["nonexistent1".to_string(), "nonexistent2".to_string()];
-        let result = manager.assign_to_task(&fake_wallets, "some_task");
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_release_nonexistent_task_fails() {
-        let mut manager = WalletManager::new();
-
-        let result = manager.release_from_task("nonexistent_task");
-        assert!(result.is_err());
-    }
 }

@@ -1,9 +1,15 @@
 {
+  "name": "sir-sols-a-lot",
+  "private": true,
+  "workspaces": ["dashboard"],
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1"
   },
   "scripts": {
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:engine": "cd engine && cargo build",
+    "build:scheduler": "cd task_scheduler && cargo build",
+    "build:all": "npm run build:engine && npm run build:scheduler && npm run build --workspaces"
   }
 }
