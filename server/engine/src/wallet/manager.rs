@@ -2,57 +2,6 @@ use std::collections::HashMap;
 use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::pubkey::Pubkey;
 
-
-//#region
-// use solana_sdk::{
-//     signature::{Keypair, Signer},
-//     pubkey::Pubkey,
-// };
-//
-// /// Represents a Solana wallet with its keypair and public key.
-// pub struct Wallet {
-//     pub keypair: Keypair,
-//     pub pubkey: Pubkey,
-// }
-//
-// impl Wallet {
-//     /// Creates a new random Solana wallet.
-//     pub fn new_random() -> Self {
-//         let keypair = Keypair::new();
-//         let pubkey = keypair.pubkey();
-//         Wallet { keypair, pubkey }
-//     }
-//
-//     /// Creates a Solana wallet from an existing keypair.
-//     pub fn from_keypair(keypair: Keypair) -> Self {
-//         let pubkey = keypair.pubkey();
-//         Wallet { keypair, pubkey }
-//     }
-//
-//     /// Returns the public key of the wallet.
-//     pub fn get_pubkey(&self) -> &Pubkey {
-//         &self.pubkey
-//     }
-//
-//     /// Returns a reference to the keypair of the wallet.
-//     pub fn get_keypair(&self) -> &Keypair {
-//         &self.keypair
-//     }
-// }
-//
-// // Example usage:
-// fn main() {
-//     let wallet = Wallet::new_random();
-//     println!("Wallet Public Key: {}", wallet.get_pubkey());
-//
-//     // You can also create a wallet from a specific keypair if you have one
-//     // let existing_keypair = Keypair::from_bytes(&[/* your 64-byte secret key here */]).unwrap();
-//     // let wallet_from_existing = Wallet::from_keypair(existing_keypair);
-//     // println!("Wallet from existing keypair Public Key: {}", wallet_from_existing.get_pubkey());
-// }
-//#endregion
-
-
 pub struct WalletManager {
     wallets: HashMap<String, Keypair>,
     counter: usize,
@@ -66,7 +15,7 @@ impl WalletManager {
         }
     }
 
-    // Single
+    // Basic wallet
     pub fn generate_wallet(&mut self, name: String) -> Result<Pubkey, String> {
         if self.wallets.contains_key(&name) {
             return Err(format!("Wallet '{}' already exists", name));
@@ -114,7 +63,7 @@ impl WalletManager {
         self.wallets.len()
     }
 
-    // Batch operations 
+    // Batch operations
     pub fn batch_generate(&mut self, prefix: &str, count: usize) -> Result<Vec<String>, String> {
         let mut generated_names = Vec::new();
 
