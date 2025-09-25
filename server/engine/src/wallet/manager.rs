@@ -1,6 +1,6 @@
-use std::collections::HashMap;
-use solana_sdk::signature::{Keypair, Signer};
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signature::{Keypair, Signer};
+use std::collections::HashMap;
 
 pub struct WalletManager {
     wallets: HashMap<String, Keypair>,
@@ -28,26 +28,31 @@ impl WalletManager {
         Ok(pubkey)
     }
 
-    pub fn import_wallet(&mut self, _name: String, _private_key_bytes: &[u8]) -> Result<Pubkey, String> {
+    pub fn import_wallet(
+        &mut self,
+        _name: String,
+        _private_key_bytes: &[u8],
+    ) -> Result<Pubkey, String> {
         unimplemented!("wallet import from private key")
     }
 
     pub fn get_wallet(&self, name: &str) -> Result<&Keypair, String> {
         match self.wallets.get(name) {
             Some(keypair) => Ok(keypair),
-            None => Err(format!("Wallet '{}' not found", name))
+            None => Err(format!("Wallet '{}' not found", name)),
         }
     }
 
     pub fn get_pubkey(&self, name: &str) -> Result<Pubkey, String> {
         match self.wallets.get(name) {
             Some(keypair) => Ok(keypair.pubkey()),
-            None => Err(format!("Wallet '{}' not found", name))
+            None => Err(format!("Wallet '{}' not found", name)),
         }
     }
 
     pub fn list_wallets(&self) -> Vec<(String, Pubkey)> {
-        self.wallets.iter()
+        self.wallets
+            .iter()
             .map(|(name, keypair)| (name.clone(), keypair.pubkey()))
             .collect()
     }
@@ -55,7 +60,7 @@ impl WalletManager {
     pub fn remove_wallet(&mut self, name: &str) -> Result<(), String> {
         match self.wallets.remove(name) {
             Some(_) => Ok(()),
-            None => Err(format!("Wallet '{}' not found", name))
+            None => Err(format!("Wallet '{}' not found", name)),
         }
     }
 
@@ -71,7 +76,7 @@ impl WalletManager {
             let name = format!("{}_{}", prefix, i);
             match self.generate_wallet(name.clone()) {
                 Ok(_) => generated_names.push(name),
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             }
         }
 
@@ -85,7 +90,7 @@ impl WalletManager {
             let name = format!("wallet_{}", self.counter + i);
             match self.generate_wallet(name.clone()) {
                 Ok(_) => generated_names.push(name),
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             }
         }
 
@@ -93,13 +98,16 @@ impl WalletManager {
         Ok(generated_names)
     }
 
-    pub fn batch_get_pubkeys(&self, wallet_names: &Vec<String>) -> Result<Vec<(String, Pubkey)>, String> {
+    pub fn batch_get_pubkeys(
+        &self,
+        wallet_names: &Vec<String>,
+    ) -> Result<Vec<(String, Pubkey)>, String> {
         let mut result = Vec::new();
 
         for name in wallet_names {
             match self.get_pubkey(name) {
                 Ok(pubkey) => result.push((name.clone(), pubkey)),
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             }
         }
 
@@ -109,8 +117,8 @@ impl WalletManager {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_create_wallet_manager() {
@@ -239,7 +247,6 @@ mod tests {
         assert_eq!(unique_names.len(), 3)
     }
 
-
     #[test]
     fn test_batch_get_pubkeys() {
         let mut manager = WalletManager::new();
@@ -257,5 +264,4 @@ mod tests {
             assert_eq!(pubkey.to_bytes().len(), 32);
         }
     }
-
 }

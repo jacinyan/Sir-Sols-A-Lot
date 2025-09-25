@@ -1,7 +1,7 @@
-pub mod task;
 pub mod queue;
 pub mod scheduler;
+pub mod task;
 
-pub use task::Task;
 pub use queue::TaskQueue;
 pub use scheduler::TaskScheduler;
+pub use task::Task;

@@ -2,7 +2,6 @@ fn main() {
     println!("Hello, world!");
 }
 
-
 #[cfg(test)]
 mod tests {
     use solana_client::nonblocking::rpc_client::RpcClient;
@@ -17,6 +16,10 @@ mod tests {
         let rpc_url = "https://api.devnet.solana.com".to_string();
         let client = RpcClient::new(rpc_url);
         let version = client.get_version().await;
-        assert!(version.is_ok(), "Failed to get Solana version: {:?}", version.err());
+        assert!(
+            version.is_ok(),
+            "Failed to get Solana version: {:?}",
+            version.err()
+        );
     }
 }

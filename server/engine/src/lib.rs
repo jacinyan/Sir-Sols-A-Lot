@@ -1,5 +1,5 @@
-pub mod wallet;
 pub mod transaction;
+pub mod wallet;
 
-pub use wallet::WalletManager;
 pub use transaction::TransactionBuilder;
+pub use wallet::WalletManager;

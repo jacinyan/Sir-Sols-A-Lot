@@ -1,17 +1,16 @@
-use solana_sdk::{
-    transaction::Transaction,
-    instruction::Instruction,
-    signature::{Keypair, Signer},
-    hash::Hash,
-};
 use solana_pubkey::Pubkey;
-use solana_system_interface::{
-    instruction
+use solana_sdk::{
+    hash::Hash,
+    instruction::Instruction,
+    message::Message,
+    signature::{Keypair, Signer},
+    transaction::Transaction,
 };
+use solana_system_interface::instruction;
+use std::sync::Arc;
 
 pub struct TransactionBuilder {
     instructions: Vec<Instruction>,
-    signers: Vec<Keypair>,
     recent_blockhash: Option<Hash>,
 }
 
@@ -19,28 +18,43 @@ impl TransactionBuilder {
     pub fn new() -> Self {
         Self {
             instructions: Vec::new(),
-            signers: Vec::new(),
             recent_blockhash: None,
         }
     }
 
-    // Basic transaction 
+    // Basic transaction
     pub fn add_instruction(&mut self, instruction: Instruction) -> &mut Self {
         self.instructions.push(instruction);
-        
+
         self
     }
 
-    pub fn add_signer(&mut self, signer: Keypair) -> &mut Self {
-        todo!("add signer to transaction")
-    }
-
     pub fn set_recent_blockhash(&mut self, blockhash: Hash) -> &mut Self {
-        todo!("set recent blockhash for transaction")
+        self.recent_blockhash = Some(blockhash);
+
+        self
     }
 
-    pub fn build(&self) -> Result<Transaction, String> {
-        todo!("build final transaction from instructions and signers")
+    pub fn build(&self, signers: &Vec<&Keypair>) -> Result<Transaction, String> {
+        // Check external input first
+        if signers.is_empty() {
+            return Err("No signers provided".to_string());
+        }
+
+        // Check internal state
+        if self.recent_blockhash.is_none() {
+            return Err("Missing recent_blockhash".to_string());
+        }
+        if self.instructions.is_empty() {
+            return Err("No instructions".to_string());
+        }
+
+        // Devnet for now, later we can make this configurable
+        Ok(Transaction::new(
+            signers,
+            Message::new(&self.instructions, None),
+            self.recent_blockhash.unwrap(),
+        ))
     }
 
     // Common transaction types
@@ -50,7 +64,16 @@ impl TransactionBuilder {
         lamports: u64,
         recent_blockhash: Hash,
     ) -> Result<Transaction, String> {
-        todo!("create SOL transfer transaction")
+        let mut builder = TransactionBuilder::new();
+        builder
+            .add_instruction(instruction::transfer(&from.pubkey(), &to, lamports))
+            .set_recent_blockhash(recent_blockhash);
+
+        let signers = vec![from];
+        // No error mapping, no custom error types for now
+        let result = builder.build(&signers)?;
+
+        Ok(result)
     }
 
     pub fn create_account(
@@ -61,7 +84,23 @@ impl TransactionBuilder {
         space: u64,
         recent_blockhash: Hash,
     ) -> Result<Transaction, String> {
-        todo!("create account creation transaction")
+        let mut builder = TransactionBuilder::new();
+        let instruction = instruction::create_account(
+            &payer.pubkey(),
+            &new_account.pubkey(),
+            lamports,
+            space,
+            owner,
+        );
+
+        builder
+            .add_instruction(instruction)
+            .set_recent_blockhash(recent_blockhash);
+
+        let signers = vec![payer, new_account];
+        let result = builder.build(&signers)?;
+
+        Ok(result)
     }
 
     // Batch operations
@@ -112,11 +151,7 @@ mod tests {
         let from = Keypair::new();
         let to = Keypair::new();
 
-        let instruction = instruction::transfer(
-            &from.pubkey(),
-            &to.pubkey(),
-            1000000,
-        );
+        let instruction = instruction::transfer(&from.pubkey(), &to.pubkey(), 1000000);
 
         builder.add_instruction(instruction);
         assert_eq!(builder.instruction_count(), 1);
@@ -132,12 +167,13 @@ mod tests {
         let instruction1 = instruction::transfer(&from.pubkey(), &to1.pubkey(), 1000000);
         let instruction2 = instruction::transfer(&from.pubkey(), &to2.pubkey(), 2000000);
 
-        builder.add_instruction(instruction1).add_instruction(instruction2);
+        builder
+            .add_instruction(instruction1)
+            .add_instruction(instruction2);
         assert_eq!(builder.instruction_count(), 2);
     }
 
     #[test]
-    #[ignore]
     fn test_simple_transfer_transaction() {
         let from = Keypair::new();
         let to = Keypair::new();
@@ -151,7 +187,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_transfer_with_zero_lamports_fails() {
         let from = Keypair::new();
         let to = Keypair::new();
@@ -162,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_create_account_transaction() {
         let payer = Keypair::new();
         let new_account = Keypair::new();
@@ -192,11 +226,7 @@ mod tests {
         let to3 = Pubkey::new_unique();
         let recent_blockhash = Hash::default();
 
-        let transfers = vec![
-            (to1, 1000000),
-            (to2, 2000000),
-            (to3, 3000000),
-        ];
+        let transfers = vec![(to1, 1000000), (to2, 2000000), (to3, 3000000)];
 
         let result = TransactionBuilder::batch_transfer(&from, &transfers, recent_blockhash);
         assert!(result.is_ok());
@@ -219,14 +249,15 @@ mod tests {
     #[test]
     fn test_build_without_recent_blockhash_fails() {
         let mut builder = TransactionBuilder::new();
-        let instruction = instruction::transfer(
-            &Keypair::new().pubkey(),
-            &Keypair::new().pubkey(),
-            1000000,
-        );
+        let instruction =
+            instruction::transfer(&Keypair::new().pubkey(), &Keypair::new().pubkey(), 1000000);
 
         builder.add_instruction(instruction);
-        let result = builder.build();
+
+
+        let from = Keypair::new();
+        let signers = vec![&from];
+        let result = builder.build(&signers);
         assert!(result.is_err());
     }
 
@@ -235,8 +266,11 @@ mod tests {
     fn test_build_without_instructions_fails() {
         let mut builder = TransactionBuilder::new();
         builder.set_recent_blockhash(Hash::default());
-
-        let result = builder.build();
+        
+        
+        let from = Keypair::new();
+        let signers = vec![&from];
+        let result = builder.build(&signers);
         assert!(result.is_err());
     }
 
@@ -250,7 +284,6 @@ mod tests {
         let instruction = instruction::transfer(&from.pubkey(), &to.pubkey(), 1000000);
         builder
             .add_instruction(instruction)
-            .add_signer(from)
             .set_recent_blockhash(Hash::default());
 
         let result = builder.validate();
@@ -260,11 +293,8 @@ mod tests {
     #[test]
     fn test_estimate_transaction_fee() {
         let mut builder = TransactionBuilder::new();
-        let instruction = instruction::transfer(
-            &Keypair::new().pubkey(),
-            &Keypair::new().pubkey(),
-            1000000,
-        );
+        let instruction =
+            instruction::transfer(&Keypair::new().pubkey(), &Keypair::new().pubkey(), 1000000);
 
         builder.add_instruction(instruction);
         let result = builder.estimate_fee();
@@ -279,11 +309,8 @@ mod tests {
         let mut builder = TransactionBuilder::new();
         let initial_size = builder.estimated_size();
 
-        let instruction = instruction::transfer(
-            &Keypair::new().pubkey(),
-            &Keypair::new().pubkey(),
-            1000000,
-        );
+        let instruction =
+            instruction::transfer(&Keypair::new().pubkey(), &Keypair::new().pubkey(), 1000000);
         builder.add_instruction(instruction);
 
         let new_size = builder.estimated_size();
@@ -293,11 +320,8 @@ mod tests {
     #[test]
     fn test_clear_builder() {
         let mut builder = TransactionBuilder::new();
-        let instruction = instruction::transfer(
-            &Keypair::new().pubkey(),
-            &Keypair::new().pubkey(),
-            1000000,
-        );
+        let instruction =
+            instruction::transfer(&Keypair::new().pubkey(), &Keypair::new().pubkey(), 1000000);
 
         builder.add_instruction(instruction);
         assert_eq!(builder.instruction_count(), 1);

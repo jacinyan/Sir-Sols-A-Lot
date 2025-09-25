@@ -1,4 +1,4 @@
-use crate::{task::Task, queue::TaskQueue};
+use crate::{queue::TaskQueue, task::Task};
 
 pub struct TaskScheduler {
     // Placeholder struct - implementation pending
