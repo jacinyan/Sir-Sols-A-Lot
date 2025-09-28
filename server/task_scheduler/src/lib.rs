@@ -1,6 +1,6 @@
-pub mod queue;
-pub mod scheduler;
-pub mod task;
+mod queue;
+mod scheduler;
+mod task;
 
 pub use queue::TaskQueue;
 pub use scheduler::TaskScheduler;

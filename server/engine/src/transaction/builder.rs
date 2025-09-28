@@ -63,6 +63,10 @@ impl TransactionBuilder {
         lamports: u64,
         recent_blockhash: Hash,
     ) -> Result<Transaction, String> {
+        if lamports == 0 {
+            return Err("Transfer amount must be greater than zero".to_string());
+        }
+
         let mut builder = TransactionBuilder::new();
         builder
             .add_instruction(instruction::transfer(&from.pubkey(), to, lamports))
@@ -123,21 +127,9 @@ impl TransactionBuilder {
         Ok(builder.build(&signers)?)
     }
 
-    // Transaction validation
-    pub fn estimate_fee(&self) -> Result<u64, String> {
-        let signature_fee = 5000; // Fixed signature fee
-        let compute_fee = self.instructions.len() as u64 * 1000; // Rough estimate per instruction
-
-        Ok(signature_fee + compute_fee)
-    }
-
     // Transaction size management
     pub fn instruction_count(&self) -> usize {
         self.instructions.len()
-    }
-
-    pub fn estimated_size(&self) -> usize {
-        todo!("estimate transaction size in bytes")
     }
 
     pub fn clear(&mut self) {
