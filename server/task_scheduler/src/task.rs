@@ -1,22 +1,28 @@
 use serde::{Deserialize, Serialize};
 use serde_json;
+use solana_sdk::{
+    signature::{Keypair, Signer},
+    transaction::Transaction,
+};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct Task {
-    // Placeholder struct - implementation pending
-
-
+    transaction: Transaction,
+    id: String,
+    status: TaskStatus,
+    retry_count: u32,
+    max_retries: u32,
+    priority: u32,
+    created_at: u64,
 }
 
 impl Task {
     pub fn new() -> Self {
-       Self {
+        Self {
               // Todo: Initialize fields
        }
     }
-
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -88,16 +94,16 @@ mod tests {
     }
 
     #[test]
-    #[ignore]
     fn test_task_in_collections() {
         let task1 = Task::new();
         let task2 = Task::new();
 
         let mut tasks = std::collections::HashSet::new();
         tasks.insert(task1.clone());
-        tasks.insert(task2);
+        tasks.insert(task2.clone());
 
         assert!(tasks.contains(&task1));
+        assert!(tasks.contains(&task2));
     }
 
     #[test]

@@ -11,6 +11,7 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
+# External dependencies
 tokio = { version = "1.0", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -22,7 +23,14 @@ solana-system-interface = { version = "2.0.0", features = ["bincode"] }
 #solana-transaction = { version = "3.0.1", features = ["bincode"] }
 #solana-hash = "2.3.0"
 
+# Internal workspace crates
+engine = { path = "engine" }
+task_scheduler = { path = "task_scheduler" }
+
 [dependencies]
 tokio = { workspace = true }
 solana-client = { workspace = true }
+engine = { workspace = true }
+task_scheduler = { workspace = true }
+
 
