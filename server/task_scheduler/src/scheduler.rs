@@ -44,7 +44,7 @@ mod tests {
     #[test]
     fn test_schedule_single_task() {
         let mut scheduler = TaskScheduler::new();
-        let task = Task::new();
+        let task = Task::new("test_params".to_string());
 
         scheduler.schedule_task(task);
 
@@ -57,7 +57,7 @@ mod tests {
         let mut scheduler = TaskScheduler::new();
 
         for _ in 0..5 {
-            scheduler.schedule_task(Task::new());
+            scheduler.schedule_task(Task::new("test_params".to_string()));
         }
 
         assert_eq!(scheduler.get_pending_count(), 5);
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn test_execute_single_task() {
         let mut scheduler = TaskScheduler::new();
-        let task = Task::new();
+        let task = Task::new("test_params".to_string());
 
         scheduler.schedule_task(task.clone());
         let executed_task = scheduler.execute_next();
@@ -84,7 +84,7 @@ mod tests {
 
         // Schedule multiple tasks
         for i in 0..3 {
-            let mut task = Task::new();
+            let mut task = Task::new("test_params".to_string());
             // Assuming Task has some identifier - this will need to be updated when Task is implemented
             scheduler.schedule_task(task);
         }
@@ -115,7 +115,7 @@ mod tests {
 
         // Add some tasks
         for _ in 0..5 {
-            scheduler.schedule_task(Task::new());
+            scheduler.schedule_task(Task::new("test_params".to_string()));
         }
 
         assert_eq!(scheduler.get_pending_count(), 5);
@@ -135,7 +135,7 @@ mod tests {
         assert_eq!(scheduler.get_pending_count(), 0);
 
         // Add task
-        scheduler.schedule_task(Task::new());
+        scheduler.schedule_task(Task::new("test_params".to_string()));
         assert!(!scheduler.is_empty());
         assert_eq!(scheduler.get_pending_count(), 1);
 
@@ -150,8 +150,8 @@ mod tests {
         let mut scheduler = TaskScheduler::new();
 
         // Schedule some tasks
-        scheduler.schedule_task(Task::new());
-        scheduler.schedule_task(Task::new());
+        scheduler.schedule_task(Task::new("test_params".to_string()));
+        scheduler.schedule_task(Task::new("test_params".to_string()));
         assert_eq!(scheduler.get_pending_count(), 2);
 
         // Execute one
@@ -159,7 +159,7 @@ mod tests {
         assert_eq!(scheduler.get_pending_count(), 1);
 
         // Schedule one more
-        scheduler.schedule_task(Task::new());
+        scheduler.schedule_task(Task::new("test_params".to_string()));
         assert_eq!(scheduler.get_pending_count(), 2);
 
         // Clear all

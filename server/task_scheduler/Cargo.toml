@@ -9,3 +9,4 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 engine = { workspace = true }
 solana-sdk = { workspace = true }
+uuid = { workspace = true }

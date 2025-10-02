@@ -1,14 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
+#    "server",
     "engine",
     "task_scheduler"
 ]
-
-[package]
-name = "server"
-version = "0.1.0"
-edition = "2021"
 
 [workspace.dependencies]
 # External dependencies
@@ -18,19 +14,20 @@ serde_json = "1.0"
 solana-client = "3.0.3"
 solana-sdk = "3.0.0"
 solana-system-interface = { version = "2.0.0", features = ["bincode"] }
-#solana-pubkey = "3.0.0"
-#solana-message = { version = "3.0.1", features = ["bincode"] }
-#solana-transaction = { version = "3.0.1", features = ["bincode"] }
-#solana-hash = "2.3.0"
+uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Internal workspace crates
 engine = { path = "engine" }
 task_scheduler = { path = "task_scheduler" }
 
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
 [dependencies]
 tokio = { workspace = true }
 solana-client = { workspace = true }
-engine = { workspace = true }
 task_scheduler = { workspace = true }
 
 
