@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, to_string};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
@@ -51,56 +50,100 @@ impl Task {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use engine::transaction::{TransactionParams, TransferParams};
+    use solana_sdk::pubkey::Pubkey;
 
     #[test]
     fn test_task_creation() {
-        let task = Task::new("test_params".to_string());
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let params_json = serde_json::to_string(&params).unwrap();
+        let task = Task::new(params_json);
         assert!(task == task);
     }
 
     #[test]
     fn test_task_clone() {
-        let task = Task::new("test_params".to_string());
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let params_json = serde_json::to_string(&params).unwrap();
+        let task = Task::new(params_json);
         let cloned_task = task.clone();
         assert_eq!(task, cloned_task);
     }
 
     #[test]
     fn test_task_equality() {
-        let task1 = Task::new("test_params".to_string());
-        let task2 = Task::new("test_params".to_string());
+        let params1 = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let params2 = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 2_000_000,
+        });
+        let task1 = Task::new(serde_json::to_string(&params1).unwrap());
+        let task2 = Task::new(serde_json::to_string(&params2).unwrap());
         assert_ne!(task1, task2, "Different tasks should have different IDs");
     }
 
     #[test]
     fn test_task_debug_format() {
-        let task = Task::new("test_params".to_string());
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let task = Task::new(serde_json::to_string(&params).unwrap());
         let debug_str = format!("{:?}", task);
         assert!(debug_str.as_str().contains("Task"));
     }
 
     #[test]
     fn test_task_serialization() {
-        let task = Task::new("test_params".to_string());
-        let serialized = to_string(&task);
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let task = Task::new(serde_json::to_string(&params).unwrap());
+        let serialized = serde_json::to_string(&task);
         assert!(serialized.is_ok());
     }
 
     #[test]
     fn test_task_deserialization() {
-        let task = Task::new("test_params".to_string());
-        let serialized = to_string(&task).unwrap();
-        let deserialized: Result<Task, _> = from_str(&serialized);
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let task = Task::new(serde_json::to_string(&params).unwrap());
+        let serialized = serde_json::to_string(&task).unwrap();
+        let deserialized: Result<Task, _> = serde_json::from_str(&serialized);
         assert!(deserialized.is_ok());
         assert_eq!(task, deserialized.unwrap());
     }
 
     #[test]
     fn test_task_round_trip_serialization() {
-        let original_task = Task::new("test_params".to_string());
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let original_task = Task::new(serde_json::to_string(&params).unwrap());
 
-        let json = to_string(&original_task).unwrap();
-        let restored_task: Task = from_str(&json).unwrap();
+        let json = serde_json::to_string(&original_task).unwrap();
+        let restored_task: Task = serde_json::from_str(&json).unwrap();
 
         assert_eq!(original_task, restored_task);
     }
@@ -108,7 +151,14 @@ mod tests {
     #[test]
     fn test_multiple_tasks_uniqueness() {
         let tasks: Vec<Task> = (0..5)
-            .map(|_| Task::new("test_params".to_string()))
+            .map(|_| {
+                let params = TransactionParams::Transfer(TransferParams {
+                    from: Pubkey::new_unique(),
+                    to: Pubkey::new_unique(),
+                    lamports: 1_000_000,
+                });
+                Task::new(serde_json::to_string(&params).unwrap())
+            })
             .collect();
 
         for i in 0..tasks.len() {
@@ -123,8 +173,18 @@ mod tests {
 
     #[test]
     fn test_task_in_collections() {
-        let task1 = Task::new("test_params".to_string());
-        let task2 = Task::new("test_params".to_string());
+        let params1 = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let params2 = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 2_000_000,
+        });
+        let task1 = Task::new(serde_json::to_string(&params1).unwrap());
+        let task2 = Task::new(serde_json::to_string(&params2).unwrap());
 
         let mut tasks = std::collections::HashSet::new();
         tasks.insert(task1.clone());
@@ -136,13 +196,18 @@ mod tests {
 
     #[test]
     fn test_task_lifecycle() {
-        let task = Task::new("test_params".to_string());
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let task = Task::new(serde_json::to_string(&params).unwrap());
         let cloned = task.clone();
 
         drop(task);
 
-        let serialized = to_string(&cloned).unwrap();
-        let restored: Task = from_str(&serialized).unwrap();
+        let serialized = serde_json::to_string(&cloned).unwrap();
+        let restored: Task = serde_json::from_str(&serialized).unwrap();
 
         assert_eq!(cloned, restored);
     }

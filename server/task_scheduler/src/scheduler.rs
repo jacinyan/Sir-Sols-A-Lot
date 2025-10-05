@@ -33,6 +33,8 @@ impl TaskScheduler {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use engine::transaction::{TransactionParams, TransferParams};
+    use solana_sdk::pubkey::Pubkey;
 
     #[test]
     fn test_create_scheduler() {
@@ -44,7 +46,12 @@ mod tests {
     #[test]
     fn test_schedule_single_task() {
         let mut scheduler = TaskScheduler::new();
-        let task = Task::new("test_params".to_string());
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let task = Task::new(serde_json::to_string(&params).unwrap());
 
         scheduler.schedule_task(task);
 
@@ -56,8 +63,13 @@ mod tests {
     fn test_schedule_multiple_tasks() {
         let mut scheduler = TaskScheduler::new();
 
-        for _ in 0..5 {
-            scheduler.schedule_task(Task::new("test_params".to_string()));
+        for i in 0..5 {
+            let params = TransactionParams::Transfer(TransferParams {
+                from: Pubkey::new_unique(),
+                to: Pubkey::new_unique(),
+                lamports: (i + 1) * 100_000,
+            });
+            scheduler.schedule_task(Task::new(serde_json::to_string(&params).unwrap()));
         }
 
         assert_eq!(scheduler.get_pending_count(), 5);
@@ -67,7 +79,12 @@ mod tests {
     #[test]
     fn test_execute_single_task() {
         let mut scheduler = TaskScheduler::new();
-        let task = Task::new("test_params".to_string());
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let task = Task::new(serde_json::to_string(&params).unwrap());
 
         scheduler.schedule_task(task.clone());
         let executed_task = scheduler.execute_next();
@@ -84,8 +101,12 @@ mod tests {
 
         // Schedule multiple tasks
         for i in 0..3 {
-            let mut task = Task::new("test_params".to_string());
-            // Assuming Task has some identifier - this will need to be updated when Task is implemented
+            let params = TransactionParams::Transfer(TransferParams {
+                from: Pubkey::new_unique(),
+                to: Pubkey::new_unique(),
+                lamports: (i + 1) * 100_000,
+            });
+            let task = Task::new(serde_json::to_string(&params).unwrap());
             scheduler.schedule_task(task);
         }
 
@@ -114,8 +135,13 @@ mod tests {
         let mut scheduler = TaskScheduler::new();
 
         // Add some tasks
-        for _ in 0..5 {
-            scheduler.schedule_task(Task::new("test_params".to_string()));
+        for i in 0..5 {
+            let params = TransactionParams::Transfer(TransferParams {
+                from: Pubkey::new_unique(),
+                to: Pubkey::new_unique(),
+                lamports: (i + 1) * 100_000,
+            });
+            scheduler.schedule_task(Task::new(serde_json::to_string(&params).unwrap()));
         }
 
         assert_eq!(scheduler.get_pending_count(), 5);
@@ -135,7 +161,12 @@ mod tests {
         assert_eq!(scheduler.get_pending_count(), 0);
 
         // Add task
-        scheduler.schedule_task(Task::new("test_params".to_string()));
+        let params = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        scheduler.schedule_task(Task::new(serde_json::to_string(&params).unwrap()));
         assert!(!scheduler.is_empty());
         assert_eq!(scheduler.get_pending_count(), 1);
 
@@ -150,8 +181,18 @@ mod tests {
         let mut scheduler = TaskScheduler::new();
 
         // Schedule some tasks
-        scheduler.schedule_task(Task::new("test_params".to_string()));
-        scheduler.schedule_task(Task::new("test_params".to_string()));
+        let params1 = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 1_000_000,
+        });
+        let params2 = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 2_000_000,
+        });
+        scheduler.schedule_task(Task::new(serde_json::to_string(&params1).unwrap()));
+        scheduler.schedule_task(Task::new(serde_json::to_string(&params2).unwrap()));
         assert_eq!(scheduler.get_pending_count(), 2);
 
         // Execute one
@@ -159,7 +200,12 @@ mod tests {
         assert_eq!(scheduler.get_pending_count(), 1);
 
         // Schedule one more
-        scheduler.schedule_task(Task::new("test_params".to_string()));
+        let params3 = TransactionParams::Transfer(TransferParams {
+            from: Pubkey::new_unique(),
+            to: Pubkey::new_unique(),
+            lamports: 3_000_000,
+        });
+        scheduler.schedule_task(Task::new(serde_json::to_string(&params3).unwrap()));
         assert_eq!(scheduler.get_pending_count(), 2);
 
         // Clear all
