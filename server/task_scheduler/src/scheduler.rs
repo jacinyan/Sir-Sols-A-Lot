@@ -1,16 +1,21 @@
 use crate::{queue::TaskQueue, task::Task};
 
 pub struct TaskScheduler {
-    // Placeholder struct - implementation pending
+    queue: TaskQueue,
 }
 
 impl TaskScheduler {
     pub fn new() -> Self {
-        todo!("TaskScheduler creation")
+        Self {
+            queue: TaskQueue::new(),
+        }
     }
 
-    pub fn schedule_task(&mut self, _task: Task) {
-        todo!("Task scheduling")
+    pub fn schedule_task(&mut self, task: Task) -> Result<(), &'static str> {
+        match self.queue.enqueue(task) {
+            Err(e) => Err(e),
+            Ok(_) => Ok(()),
+        }
     }
 
     pub fn execute_next(&mut self) -> Option<Task> {
@@ -18,7 +23,7 @@ impl TaskScheduler {
     }
 
     pub fn get_pending_count(&self) -> usize {
-        todo!("Get pending task count")
+        self.queue.len()
     }
 
     pub fn clear_all(&mut self) {
@@ -26,7 +31,7 @@ impl TaskScheduler {
     }
 
     pub fn is_empty(&self) -> bool {
-        todo!("Check if scheduler is empty")
+        self.queue.len() == 0
     }
 }
 

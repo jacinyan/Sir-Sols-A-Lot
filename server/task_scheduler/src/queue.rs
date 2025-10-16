@@ -1,19 +1,34 @@
 use crate::task::Task;
+use crossbeam::queue::SegQueue;
 
 pub struct TaskQueue {
-    // Placeholder struct - implementation pending
+    inner: SegQueue<Task>,
+    max_size: Option<usize>,
 }
 
 impl TaskQueue {
     pub fn new() -> Self {
-        todo!("TaskQueue creation")
+        Self {
+            inner: SegQueue::new(),
+            max_size: None,
+        }
     }
 
-    pub fn enqueue(&mut self, _task: Task) {
-        todo!("Task enqueue")
+    pub fn enqueue(&mut self, task: Task) -> Result<(), &'static str> {
+        if let Some(max) = self.max_size {
+            if self.len() >= max {
+                return Err("Queue is bounded and it's full");
+            }
+        }
+        self.inner.push(task);
+        Ok(())
     }
 
     pub fn dequeue(&mut self) -> Option<Task> {
-        todo!("Task dequeue")
+        self.inner.pop()
+    }
+
+    pub fn len(&self) -> usize {
+        self.inner.len()
     }
 }
